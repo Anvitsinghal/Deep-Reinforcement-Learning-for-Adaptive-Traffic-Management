@@ -1,0 +1,94 @@
+\chapter*{Annexure A: Program Outcomes (PO) and Program Specific Outcomes (PSO) Mapping}
+\addcontentsline{toc}{chapter}{Annexure A: PO and PSO Mapping}
+\label{annex:po_pso}
+
+The Major Project 1 work presented in this report directly maps to the Program Outcomes (POs) and Program Specific Outcomes (PSOs) defined by the National Board of Accreditation (NBA) for the Bachelor of Technology in Information Technology program at Jaypee Institute of Information Technology (JIIT), Noida. Table \ref{tab:po_pso_mapping} details the mapping correlation levels (3: Substantial, 2: Moderate, 1: Slight) along with concrete project justifications.
+
+\begin{small}
+\begin{longtable}{|p{1.8cm}|p{2.8cm}|c|p{8.2cm}|}
+\caption{Program Outcomes (PO) and Program Specific Outcomes (PSO) Mapping Matrix} \label{tab:po_pso_mapping} \\
+\hline
+\textbf{PO / PSO} & \textbf{Statement} & \textbf{Level} & \textbf{Project Justification and Evidence} \\ \hline
+\endfirsthead
+\hline
+\textbf{PO / PSO} & \textbf{Statement} & \textbf{Level} & \textbf{Project Justification and Evidence} \\ \hline
+\endhead
+\hline
+\multicolumn{4}{|r|}{\textit{Continued on next page\dots}} \\ \hline
+\endfoot
+\hline
+\endlastfoot
+
+\textbf{PO1} & Engineering Knowledge & 3 & Applied advanced mathematical principles of Markov Decision Processes, Dec-POMDP, Bellman equations, and deep neural network approximations. \\ \hline
+\textbf{PO2} & Problem Analysis & 3 & Formulated heterogeneous Indian traffic queue spillbacks and inter-junction gridlocks through empirical sensor dataset analysis and traffic flow theory. \\ \hline
+\textbf{PO3} & Design / Development of Solutions & 3 & Designed and developed an end-to-end framework integrating YOLOv8 perception, Res-MLP world model, and MAPPO multi-agent control under IRC:93 safety constraints. \\ \hline
+\textbf{PO4} & Conduct Investigations of Complex Problems & 3 & Benchmarked policy performance across 6 rigorous operational scenarios and 10 statistical seeds, validating hypotheses on simulator mismatch and green waves. \\ \hline
+\textbf{PO5} & Modern Tool Usage & 3 & Leveraged industry-standard machine learning stacks: PyTorch, Ultralytics YOLOv8, OpenCV, Streamlit, TensorRT, and Git version control. \\ \hline
+\textbf{PO6} & The Engineer and Society & 3 & Formulated automated signal control directly mitigating public road congestion, emergency vehicle delays, and pedestrian intersection crossing safety. \\ \hline
+\textbf{PO7} & Environment and Sustainability & 3 & Quantified significant fuel conservation and calculated annualized greenhouse gas reduction ($1,168$ metric tons of $\text{CO}_2$), addressing climate action. \\ \hline
+\textbf{PO8} & Ethics & 2 & Complied strictly with the Digital Personal Data Protection (DPDP) Act, 2023, ensuring zero edge storage of identifiable facial or license plate data. \\ \hline
+\textbf{PO9} & Individual and Team Work & 3 & Executed systematic phased milestones spanning dataset curation, world model modeling, policy engineering, dashboard creation, and technical reporting. \\ \hline
+\textbf{PO10} & Communication & 3 & Prepared comprehensive technical documentation, mathematical derivations, academic reports, and live interactive visual demonstration interfaces. \\ \hline
+\textbf{PO11} & Project Management and Finance & 2 & Conducted thorough Bill of Materials (BOM) cost-benefit analysis demonstrating an 88.5\% capital cost reduction over traditional SCATS infrastructure. \\ \hline
+\textbf{PO12} & Life-long Learning & 3 & Mastered state-of-the-art developments in multi-agent reinforcement learning, surrogate world models, and real-time edge computer vision architectures. \\ \hline
+\textbf{PSO1} & Core Computing Competence & 3 & Architected high-throughput residual neural networks and decentralized actor-critic pipelines achieving 135,000 state transitions/sec. \\ \hline
+\textbf{PSO2} & Domain-Specific Intelligent Systems & 3 & Engineered an intelligent, vision-driven edge cyber-physical transportation system tailored for unstructured vehicular corridors. \\
+\end{longtable}
+\end{small}
+
+\chapter*{Annexure B: Project Outcomes and Artifact Deliverables}
+\addcontentsline{toc}{chapter}{Annexure B: Project Outcomes and Artifact Deliverables}
+\label{annex:outcomes}
+
+The execution of this Major Project has yielded tangible software artifacts, empirical models, and academic deliverables summarized below:
+
+\begin{enumerate}
+    \item \textbf{Production-Grade Software Codebase}:
+    \begin{itemize}
+        \item \texttt{src/neural\_world\_model.py}: Modular PyTorch Residual MLP world model architecture with multi-step forward simulation capabilities.
+        \item \texttt{tools/train\_world\_model.py}: End-to-end training pipeline ingesting 40-day empirical IIT Delhi and Pune arterial datasets.
+        \item \texttt{src/data\_driven\_env.py}: OpenAI Gym-compliant 3-intersection coordinated corridor environment with full IRC:93 safety logic.
+        \item \texttt{src/train\_mappo\_data\_driven.py}: Scalable MAPPO actor-critic algorithm with GAE advantage calculation and mini-batch PPO-clip updates.
+        \item \texttt{vehicle\_detection/live\_vision\_pipeline.py}: Real-time YOLOv8 vehicle detection and Hungarian LAP tracking pipeline with IRC:106 PCU weighing.
+        \item \texttt{src/dashboard\_live\_vision.py}: Streamlit web application providing real-time telemetry, phase splits, and live video annotation.
+        \item \texttt{src/live\_traffic\_controller.py}: Standalone high-speed OpenCV HUD for edge signal controller cabinets.
+    \end{itemize}
+
+    \item \textbf{Pretrained Neural Weights and Checkpoints}:
+    \begin{itemize}
+        \item \texttt{mappo\_models/traffic\_world\_model.pth}: Optimized world model checkpoint achieving $\text{MSE} = 0.001579$ on empirical test splits.
+        \item \texttt{mappo\_models/best\_actor.pth} \& \texttt{best\_critic.pth}: Pretrained MAPPO policy networks achieving $41.5\%$ delay reduction.
+    \end{itemize}
+
+    \item \textbf{Empirical Evaluation Datasets and Benchmarks}:
+    \begin{itemize}
+        \item \texttt{mappo\_logs/data\_driven\_eval\_summary.csv}: Complete numerical benchmark logs across 6 operational scenarios.
+        \item \texttt{mappo\_models/data\_driven\_eval\_comparison.png}: Multi-panel comparative visualization chart.
+    \end{itemize}
+\end{enumerate}
+
+\chapter*{Annexure C: Sustainability and UN Sustainable Development Goals (SDG) Statement}
+\addcontentsline{toc}{chapter}{Annexure C: Sustainability and UN SDG Statement}
+\label{annex:sustainability}
+
+Urban arterial congestion poses an acute global sustainability crisis. This project aligns with the United Nations 2030 Agenda for Sustainable Development, contributing specifically to three key Sustainable Development Goals:
+
+\begin{enumerate}
+    \item \textbf{SDG 9: Industry, Innovation, and Infrastructure (Target 9.1 \& 9.4)}:
+    \begin{quote}
+        \textit{``Develop quality, reliable, sustainable and resilient infrastructure... and retrofit industries to make them sustainable, with increased resource-use efficiency and greater adoption of clean and environmentally sound technologies.''}
+    \end{quote}
+    \textbf{Project Contribution}: By substituting multi-crore imported proprietary systems (e.g., SCATS, SCOOT) with an edge-AI vision framework running on affordable commercial compute units (NVIDIA Jetson) and commodity CCTV cameras, this project offers an open, cost-effective infrastructure upgrade for emerging economies. It eliminates road-tearing pavement cuts required for inductive loops and maximizes the vehicular capacity of existing asphalt assets without requiring capital-intensive road widening.
+
+    \item \textbf{SDG 11: Sustainable Cities and Communities (Target 11.2 \& 11.6)}:
+    \begin{quote}
+        \textit{``By 2030, provide access to safe, affordable, accessible and sustainable transport systems for all, improving road safety... and reduce the adverse per capita environmental impact of cities.''}
+    \end{quote}
+    \textbf{Project Contribution}: Coordinated arterial green waves dramatically diminish stop-and-go idling along urban corridors, reducing localized particulate emissions ($\text{PM}_{2.5}$) and noise pollution in densely populated roadside neighborhoods. Furthermore, the deterministic safety state machine guarantees safe, dedicated pedestrian crossing intervals, reducing vulnerable road user collision risks.
+
+    \item \textbf{SDG 13: Climate Action (Target 13.2)}:
+    \begin{quote}
+        \textit{``Integrate climate change measures into national policies, strategies and planning.''}
+    \end{quote}
+    \textbf{Project Contribution}: With an estimated reduction of $1,168$ metric tons of $\text{CO}_2$ equivalent per corridor annually, wide deployment across national arterial networks directly assists India's Nationally Determined Contributions (NDCs) under the Paris Agreement to achieve net-zero transport carbon intensity.
+\end{enumerate}

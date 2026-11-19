@@ -1,0 +1,58 @@
+{
+  "0": {
+    "name": "two_wheeler",
+    "pcu": 0.5
+  },
+  "1": {
+    "name": "auto_rickshaw",
+    "pcu": 1.0
+  },
+  "2": {
+    "name": "car",
+    "pcu": 1.0
+  },
+  "3": {
+    "name": "bus",
+    "pcu": 3.0
+  },
+  "4": {
+    "name": "lcv",
+    "pcu": 1.5
+  },
+  "5": {
+    "name": "truck",
+    "pcu": 3.0
+  },
+  "6": {
+    "name": "tempo",
+    "pcu": 1.5
+  },
+  "7": {
+    "name": "bicycle",
+    "pcu": 0.2
+  },
+  "8": {
+    "name": "e_rickshaw",
+    "pcu": 1.0
+  },
+  "9": {
+    "name": "tractor",
+    "pcu": 2.0
+  },
+  "10": {
+    "name": "van",
+    "pcu": 1.0
+  },
+  "11": {
+    "name": "mini_bus",
+    "pcu": 2.0
+  },
+  "12": {
+    "name": "heavy_truck",
+    "pcu": 3.5
+  },
+  "13": {
+    "name": "other",
+    "pcu": 1.0
+  }
+}

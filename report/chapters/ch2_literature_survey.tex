@@ -1,0 +1,97 @@
+% ==============================================================================
+% Chapter 2: Literature Survey
+% ==============================================================================
+\chapter{Literature Survey}
+\label{ch:lit_survey}
+
+This chapter conducts a comprehensive critical review of prior literature spanning conventional traffic engineering, single-agent and multi-agent reinforcement learning for urban signal control, microscopic traffic simulation, and computer-vision-based traffic perception. The surveyed methodologies are compared in tabular form, followed by an explicit formulation of the research gaps that motivate the proposed architecture.
+
+\section{Critical Review}
+\label{sec:critical_review}
+
+\subsection{Conventional Urban Traffic Control Systems}
+The earliest formal methodologies for traffic signal timing date to Webster's seminal work in 1958 \cite{ref_webster1958}, which formulated analytical equations to minimize delay under static, steady-state Poisson vehicular arrivals. Webster's method calculates optimal cycle lengths and phase splits as a direct function of critical lane flow ratios and intersection lost time:
+\begin{equation}
+C_{opt} = \frac{1.5L + 5}{1 - \sum_{i=1}^n Y_i}
+\end{equation}
+where $L$ denotes total lost time per cycle and $Y_i = q_i / s_i$ represents the flow ratio for critical phase $i$. While computationally straightforward, Webster's fixed-time plans operate strictly open-loop. They fail under dynamic demand fluctuations, peak-hour surges, and spatial queue spills.
+
+To introduce closed-loop adaptability, urban centers in developed economies deployed centralized adaptive systems such as SCOOT (Split Cycle Offset Optimisation Technique) \cite{ref_hunt1981} and SCATS (Sydney Coordinated Adaptive Traffic System) \cite{ref_scats1980}. SCOOT utilizes cyclical flow profiles recorded from upstream inductive loops to continuously adjust cycle splits, offsets, and durations via gradient-based heuristic optimization. SCATS dynamically selects predefined signal plans based on measured degree of saturation (DS) across approach stop lines.
+
+Despite their commercial maturity, both SCOOT and SCATS exhibit acute systemic vulnerabilities when considered for developing economies:
+\begin{enumerate}
+    \item \textbf{High Capital and Maintenance Costs}: Both systems require dense arrays of intrusive in-pavement inductive loop sensors and high-bandwidth, low-latency telecommunication backbones connecting thousands of controllers to central servers. In India, road repaving, utility trenching, and waterlogging routinely sever loop connections, rendering the systems non-operational.
+    \item \textbf{Failure under Heterogeneous Non-Lane Traffic}: Inductive loop detectors are calibrated to record the magnetic disturbance of a single passenger car occupying a demarcated lane. In Indian urban corridors, two-wheelers and three-wheelers filter between lanes and stop abreast; a single 3.5-meter lane often accommodates three motorcycles and an auto-rickshaw simultaneously. Consequently, inductive loops experience severe undercounting or false occupancy saturation.
+\end{enumerate}
+
+\subsection{Single-Agent Reinforcement Learning for Signal Control}
+The emergence of Deep Reinforcement Learning (DRL) provided an avenue for model-free adaptive traffic control. Early formulations applied tabular Q-learning \cite{ref_abdulhai2003} and Deep Q-Networks (DQN) \cite{ref_oroojlooy2020} to isolated four-legged intersections. Genders and Razavi \cite{ref_genders2016} demonstrated that discrete-state DQNs ingesting discretized spatial lane matrices could learn responsive green-extension policies that substantially outperformed fixed-time controllers in simulated environments.
+
+Subsequent works introduced continuous action-space policy gradient algorithms, such as Deep Deterministic Policy Gradient (DDPG) and Proximal Policy Optimization (PPO) \cite{ref_schulman2017}. PPO proved particularly compelling for traffic signal control due to its clipped surrogate objective:
+\begin{equation}
+L^{CLIP}(\theta) = \hat{\mathbb{E}}_t \left[ \min\left(r_t(\theta)\hat{A}_t, \, \text{clip}(r_t(\theta), 1-\varepsilon, 1+\varepsilon)\hat{A}_t\right) \right]
+\end{equation}
+which strictly bounds policy parameter updates, preventing the destructive destabilization common in actor-critic networks under stochastic traffic bursts.
+
+However, single-agent RL models suffer from an insurmountable structural limitation when extended to urban corridors: \textbf{environmental non-stationarity}. When multiple isolated single-agent RL controllers operate along adjacent intersections, the actions of upstream Agent 1 alter the arrival distribution and queue dynamics observed by downstream Agent 2. Because each agent treats its neighbors simply as a shifting, non-stationary environment, independent Q-learning or independent PPO policies frequently diverge, develop myopic selfish behaviors, or induce severe downstream shockwaves.
+
+\subsection{Multi-Agent Reinforcement Learning (MARL) in Arterial Corridors}
+To achieve collaborative corridor-wide optimization, recent literature has shifted towards Multi-Agent Reinforcement Learning (MARL) \cite{ref_mappo2022}. Early multi-agent traffic control frameworks relied on Independent Q-Learning (IQL), which failed to resolve the non-stationarity challenge. To enable inter-agent coordination, researchers investigated two primary paradigms:
+\begin{enumerate}
+    \item \textbf{Communication-Enhanced Networks}: Frameworks such as CommNet \cite{ref_sukhbaatar2016} and CoLight \cite{ref_wei2019colight} utilize graph neural networks (GNNs) and attention mechanisms to exchange continuous latent communication vectors between neighboring traffic signal controllers. While CoLight demonstrated impressive queue balancing across synthetic grid networks, its execution requires real-time inter-intersection wireless communications. Packet drops or latency jitter in real-world municipal radio networks severely degrade policy performance.
+    \item \textbf{Centralized Training with Decentralized Execution (CTDE)}: Frameworks operating under CTDE allow agents to access global state information during the offline training phase, while enforcing strictly localized, communication-free policy execution during online deployment. Multi-Agent Deep Deterministic Policy Gradient (MADDPG) \cite{ref_lowe2017} extended actor-critic methods to CTDE by equipping each agent with a centralized critic that observes joint states and joint actions. However, MADDPG relies on off-policy deterministic gradients, which suffer from hyperparameter sensitivity and high variance in stochastic traffic environments.
+\end{enumerate}
+
+Recently, Yu et al. \cite{ref_mappo2022} established that \textbf{Multi-Agent Proximal Policy Optimization (MAPPO)} consistently matches or outperforms complex off-policy and value-factorization algorithms across cooperative multi-agent benchmarks. MAPPO combines on-policy PPO updates with a centralized value function $V_\phi(s)$ that evaluates global corridor welfare during training. During execution, each decentralized actor policy $\pi_\theta(a_i \mid o_i)$ requires only its local 22-dimensional sensory observation, completely eliminating the need for inter-signal radio infrastructure.
+
+\subsection{Simulation Fragility and the Case for World Models}
+Virtually all existing RL traffic signal research is trained and evaluated using microscopic traffic simulators, overwhelmingly SUMO (Simulation of Urban MObility) \cite{ref_sumo2018}. While SUMO provides high-fidelity car-following and sublane models, its integration with reinforcement learning pipelines presents severe operational bottlenecks:
+\begin{itemize}
+    \item \textbf{Microscopic TraCI Socket Fragility}: Reinforcement learning agents interact with SUMO through the Traffic Control Interface (TraCI) over local TCP/IP sockets. In multi-agent parallel environments, TraCI processes experience frequent socket disconnects, unhandled process terminations, and port collisions under heavy multiprocessing loads.
+    \item \textbf{Simulation Speed Bottleneck}: Microscopic physics engines compute spatial coordinates, accelerations, and car-following equations for thousands of individual vehicles at every sub-second time step. Consequently, training an RL policy to convergence requires days of compute, severely limiting hyperparameter exploration.
+    \item \textbf{Sim-to-Real Calibration Gap}: Microscopic simulators model lane-disciplined following (e.g., Krauss or IDM models). They fail to replicate the complex emergent dynamics of Indian roads, where two-wheelers squeeze through lateral gaps and weave non-linearly across traffic streams.
+\end{itemize}
+
+Ha and Schmidhuber \cite{ref_worldmodels2018} introduced the concept of \textbf{World Models}, demonstrating that deep neural networks can learn compact spatial and temporal dynamics of complex environments, allowing reinforcement learning agents to train entirely within the latent dynamics of a learned model. Transferring this paradigm to traffic engineering, a deep residual surrogate model trained directly on empirical sensor transition tuples $(s_t, a_t, r_t, s_{t+1})$ can bypass microscopic simulation entirely, operating at thousands of frames per second while anchoring system dynamics to real-world road measurements.
+
+\subsection{Computer Vision and Indian Vehicle Heterogeneity}
+Standard Western traffic metrics focus purely on vehicle counts. In India, traffic composition is governed by the Indian Roads Congress (IRC) standard \textbf{IRC:106-1990: Guidelines for Capacity of Urban Roads in Plain Areas} \cite{ref_irc106}. IRC:106 defines the \textbf{Passenger Car Unit (PCU)}, a conversion factor that normalizes the spatial footprint, acceleration capability, and maneuvering headway of different vehicle categories relative to a standard passenger car:
+\begin{equation}
+\text{PCU}_{\text{Total}} = \sum_{k \in \mathcal{K}} N_k \times w_k
+\end{equation}
+where $N_k$ is the number of vehicles of class $k$ and $w_k$ is its designated PCU weight ($0.5$ for two-wheelers, $1.0$ for auto-rickshaws and cars, $3.0$ for buses and trucks).
+
+Computer vision models trained on standard Western benchmarks (such as COCO \cite{ref_lin2014coco}) fail to recognize Indian vehicle classes; they invariably misclassify auto-rickshaws as cars or miss two-wheeler swarms entirely. The recent release of the \textbf{IISc AIM BMD-45 dataset} \cite{ref_iisc_bmd45} provides a dedicated 14-class Indian vehicular taxonomy designed for traffic CCTV surveillance. Coupling modern real-time detectors (YOLOv8 \cite{ref_yolov8}) with IRC:106 PCU weights enables continuous, non-intrusive traffic state estimation.
+
+\section{Summary Table}
+\label{sec:lit_summary_table}
+Table \ref{tab:lit_survey_summary} provides a systematic comparative evaluation of prominent literature and commercial systems against the proposed architecture.
+
+\begin{table}[htbp]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\caption{Systematic comparison of existing traffic control systems with the proposed MAPPO corridor framework}
+\label{tab:lit_survey_summary}
+\begin{tabularx}{\textwidth}{|p{2.3cm}|p{1.7cm}|p{1.8cm}|p{1.9cm}|p{1.8cm}|p{1.8cm}|X|}
+\hline
+\textbf{Work / System} & \textbf{Control Paradigm} & \textbf{Corridor Coordination} & \textbf{Vehicle Heterogeneity} & \textbf{Simulation Dependency} & \textbf{Live Edge Vision} & \textbf{Primary Limitations} \\ \hline
+Webster (1958) \cite{ref_webster1958} & Static Pre-timed & None (Isolated) & None (Counts) & None (Analytical) & None & Open-loop; cannot adapt to dynamic congestion. \\ \hline
+SCATS / SCOOT \cite{ref_scats1980, ref_hunt1981} & Centralized Actuated & Central Server Offset Sync & Very Low (Assumes Car Lanes) & None (Physical Loops) & None (In-pavement loops) & High capital cost; fragile loop sensors break under Indian road conditions. \\ \hline
+Genders \& Razavi (2016) \cite{ref_genders2016} & Single-Agent DQN & None (Isolated) & None (Car only) & Microscopic (SUMO) & None & Suffers from non-stationarity in corridors; lacks PCU awareness. \\ \hline
+Wei et al. (CoLight, 2019) \cite{ref_wei2019colight} & MARL (GCN Attention) & Peer-to-Peer Comm. & Low (Synthetic cars) & Microscopic (CityFlow) & None & Dependent on active inter-signal wireless communication channels. \\ \hline
+Yu et al. (MAPPO, 2022) \cite{ref_mappo2022} & On-Policy MARL & Centralized Critic (CTDE) & Benchmark only (MuJoCo/SMAC) & Physics Simulator & None & General benchmark study; not applied to empirical Indian traffic networks. \\ \hline
+\textbf{Proposed System (Ours)} & \textbf{MAPPO with CTDE} & \textbf{Global Critic + Local Exec.} & \textbf{Full IRC:106 (2W, Auto, Bus, Truck)} & \textbf{Simulator-Free (World Model)} & \textbf{YOLOv8 + BMD-45 Taxonomy} & Requires GPU/NPU for multi-stream edge video processing. \\ \hline
+\end{tabularx}
+\end{table}
+
+\section{Identification of Research Gaps}
+\label{sec:research_gaps}
+The synthesis of existing literature reveals three fundamental research gaps:
+\begin{enumerate}
+    \item \textbf{Research Gap 1 -- Neglect of Indian Vehicular Heterogeneity and PCU Equivalents in DRL}: Existing reinforcement learning literature uniformly defines reward functions based on discrete vehicular counts or vehicle waiting seconds under the assumption of lane-disciplined passenger cars. In developing economies where two-wheelers and auto-rickshaws dominate, count-based rewards cause catastrophic misallocations (e.g., granting equal clearance priority to a scooter and a crowded transit bus). An integrated perception-to-reward formulation grounded in Indian Roads Congress PCU standards is completely missing.
+    \item \textbf{Research Gap 2 -- The Simulator Fragility and Sim-to-Real Deployment Gap}: Standard MARL traffic frameworks rely on microscopic simulation engines (SUMO) communicating over fragile TraCI socket connections. These systems are prohibitively slow to train, subject to random socket crashes, and fundamentally uncalibrated to Indian sublane filtering dynamics. A lightweight, data-driven surrogate Neural World Model trained on empirical field sensor data that functions as an offline digital twin has not been explored for corridor signal control.
+    \item \textbf{Research Gap 3 -- Absence of Fail-Safe Edge Vision-to-Actuation Pipelines}: Existing computer vision papers evaluate detection accuracy in isolation, while existing RL papers evaluate agent rewards in simulation. A unified, end-to-end operational framework that takes live/recorded CCTV video feeds, extracts dynamic PCU queues via YOLO, passes the observation into a trained MARL policy, and executes valid 3-color (Red, Yellow, Green) safety state machine transitions on screen has remained unaddressed.
+\end{enumerate}
+
+These three identified gaps directly define the core engineering contributions and experimental methodology of this thesis.

@@ -1,0 +1,325 @@
+% ==============================================================================
+% Chapter 3: System Design and Methodology
+% ==============================================================================
+\chapter{System Design and Methodology}
+\label{ch:system_design}
+
+This chapter details the system architecture, mathematical formulations, and engineering design decisions of the proposed Multi-Agent Adaptive Traffic Signal Control system. Section \ref{sec:design_considerations} examines the socio-technical and environmental constraints governing the design. Section \ref{sec:methodology} presents the overall multi-layered system architecture and operational pipelines. Section \ref{sec:modelling} formalizes the mathematical models governing computer vision PCU extraction, Markov Decision Process (MDP) state-action representations, Multi-Agent PPO policy optimization, and the Deep Neural World Model. Finally, Section \ref{sec:tool_selection} provides rigorous technical justifications for every software and hardware tool selected.
+
+\section{Design Considerations}
+\label{sec:design_considerations}
+
+Urban traffic infrastructure is a safety-critical socio-technical system. The failure of a signal controller can induce economic gridlock or lead to fatal vehicular collisions. Consequently, the design of the proposed AI system was bounded by multidimensional real-world engineering constraints, summarized in Table \ref{tab:design_aspects}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Mapping of real-world design aspects to engineering decisions}
+\label{tab:design_aspects}
+\begin{tabularx}{\textwidth}{|p{3.0cm}|p{5.5cm}|X|}
+\hline
+\textbf{Design Aspect} & \textbf{Key Real-World Constraint} & \textbf{Resulting System Design Decision} \\ \hline
+Economic & Municipalities cannot afford expensive commercial SCATS licenses (\$50,000+ per junction) or cloud API token billing. & Fully open-source software stack; edge execution on commodity hardware; browser-native telemetry without recurring SaaS fees. \\ \hline
+Environmental & Persistent cloud transmission of high-bandwidth video streams consumes massive data-center cooling and network power. & On-device quantized edge perception; video inference executed locally; signals coordinate to reduce vehicle idling emissions. \\ \hline
+Social \& Equity & High-density public transit buses are delayed equally with single-occupant private cars in traditional timing plans. & IRC:106 PCU-weighted reward formulation: buses (3.0 PCU) receive natural green-wave clearance priority over sparse car approaches. \\ \hline
+Political \& Regulatory & CCTV feeds of public roadways contain citizen faces and license plates, subject to India's DPDP Act, 2023. & Absolute data boundary: video frames are processed in volatile memory and discarded immediately; zero video leaves the edge device. \\ \hline
+Ethical \& Safety & A black-box deep learning policy might output erratic 1-second phase switches (fluttering), causing fatal pile-ups. & Deterministic finite-state safety wrapper: hard minimum green time (12s), 3-second yellow clearance, and 3-second all-red safety hold. \\ \hline
+Health \& Safety & Traffic police officers exposed to hazardous ambient particulate matter ($\text{PM}_{2.5}$) and carbon monoxide at manual junctions. & Fully autonomous edge-based signal control removes the need for physical traffic police deployment in hazardous intersection air. \\ \hline
+Sustainability & Road repairs, utility digging, and monsoons frequently destroy in-pavement loop sensors. & Completely non-intrusive overhead camera perception; no physical in-road sensors; zero physical wear on roadway assets. \\ \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Technical Design Constraints}
+In addition to socio-technical aspects, the system was engineered against strict real-time computing constraints, detailed in Table \ref{tab:technical_constraints}.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Technical constraints and architectural implementation mechanisms}
+\label{tab:technical_constraints}
+\begin{tabularx}{\textwidth}{|p{3.5cm}|p{6.0cm}|X|}
+\hline
+\textbf{Technical Constraint} & \textbf{Implementation Mechanism} & \textbf{Verification Method} \\ \hline
+Zero Cloud Dependency & Local PyTorch, OpenCV, and Gymnasium execution; zero external network calls & Air-gapped test with disconnected Ethernet and Wi-Fi \\ \hline
+Real-Time Perception & YOLOv8 Nano (\texttt{yolov8n.pt}, 6.2 MB) running in FP32/INT8 quantized mode & Maintained $\ge 30$ FPS video processing throughput \\ \hline
+Deterministic Safety Phasing & Dual-ring state machine enforcing minimum green (12s), yellow (3s), and all-red (3s) & Automated safety state assertion testing \\ \hline
+Simulator Independence & Standalone Deep Residual Neural World Model (\texttt{TrafficDynamicsWorldModel}) & Zero SUMO / TraCI socket processes during training/eval \\ \hline
+Corridor Coordination & Parameter-shared MAPPO Actor with centralized value function (CTDE) & Platoon green-wave progression across 3 junctions \\ \hline
+\end{tabularx}
+\end{table}
+
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{System Architecture}
+The system is structured as a modular, four-layer architecture, illustrated in Figure \ref{fig:ch3_system_arch}:
+\begin{enumerate}
+    \item \textbf{Layer 1: Perception Layer (Edge Vision Engine)}: Ingests raw video frames from roadside CCTV cameras or live webcam feeds. Executes YOLOv8 vehicle detection, tracks centroids across frames using Linear Assignment (LAP), applies spatial Region-of-Interest (ROI) lane masks, and filters stationary queued vehicles. Classifies vehicles into 5 Indian categories and calculates real-time approach PCU loads.
+    \item \textbf{Layer 2: Environment \& Dynamics Layer (Neural World Model Digital Twin)}: Ingests the 22-dimensional local observation vector from each intersection and simulates multi-junction corridor dynamics. Operates either in microscopic simulation mode (SUMO) or simulator-free data-driven mode (\texttt{DataDrivenTrafficEnv}), predicting next-state transitions and PCU delay rewards.
+    \item \textbf{Layer 3: Multi-Agent RL Control Layer (MAPPO)}: Hosts the trained parameter-shared Actor network $\pi_\theta(a_i \mid o_i)$. Evaluates local observation vectors every decision epoch and outputs discrete phase actions $a_i \in \{0, 1, 2\}$ for each intersection along the corridor.
+    \item \textbf{Layer 4: Safety State Machine \& Actuation Layer}: Intercepts raw agent actions through a deterministic safety wrapper. Enforces minimum green thresholds, yellow change intervals, and all-red clearance intervals before rendering physical 3-color signal states (Red, Yellow, Green) on the live video HUD and web telemetry dashboard.
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    scale=0.82, transform shape,
+    layer/.style={rectangle, draw=black!70, fill=blue!5, very thick, minimum width=15cm, minimum height=2.2cm, rounded corners=4pt},
+    box/.style={rectangle, draw=black!60, fill=white, thick, minimum width=3.2cm, minimum height=1.3cm, rounded corners=2pt, font=\small, align=center},
+    arrow/.style={->, >=stealth, very thick, color=blue!70!black}
+]
+
+% Layer 1
+\node[layer, fill=teal!8] (L1) at (0, 7.5) {};
+\node[anchor=north west, font=\bfseries\small, color=teal!80!black] at (-7.3, 8.4) {Layer 1: Edge Perception Engine (YOLOv8 + BMD-45 Taxonomy)};
+\node[box] (b1) at (-5.0, 7.3) {CCTV / Video Feed\\(Webcam / MP4)};
+\node[box] (b2) at (-1.6, 7.3) {YOLOv8 Object\\Detection};
+\node[box] (b3) at (1.8, 7.3) {Indian Class Mapping\\(2W, Auto, Bus, etc.)};
+\node[box] (b4) at (5.2, 7.3) {IRC:106 PCU Queue\\Extraction (22-dim)};
+
+\draw[arrow] (b1) -- (b2);
+\draw[arrow] (b2) -- (b3);
+\draw[arrow] (b3) -- (b4);
+
+% Layer 2
+\node[layer, fill=indigo!8] (L2) at (0, 4.8) {};
+\node[anchor=north west, font=\bfseries\small, color=indigo!80!black] at (-7.3, 5.7) {Layer 2: Environment \& Dynamics (Deep Neural World Model)};
+\node[box] (c1) at (-4.2, 4.6) {Gymnasium Interface\\\texttt{DataDrivenTrafficEnv}};
+\node[box] (c2) at (0, 4.6) {Residual Dynamics Model\\$\Delta s_t = g_\theta(s_t, a_t)$};
+\node[box] (c3) at (4.2, 4.6) {Empirical Sensor Data\\(Delhi \& Pune Sets)};
+
+\draw[arrow] (c3) -- (c2);
+\draw[arrow] (c2) -- (c1);
+
+% Layer 3
+\node[layer, fill=purple!8] (L3) at (0, 2.1) {};
+\node[anchor=north west, font=\bfseries\small, color=purple!80!black] at (-7.3, 3.0) {Layer 3: Multi-Agent Deep RL Control (MAPPO with CTDE)};
+\node[box] (d1) at (-4.5, 1.9) {TL-1 Actor Policy\\$\pi_\theta(a_1 \mid o_1)$};
+\node[box] (d2) at (0, 1.9) {TL-2 Actor Policy\\$\pi_\theta(a_2 \mid o_2)$};
+\node[box] (d3) at (4.5, 1.9) {TL-3 Actor Policy\\$\pi_\theta(a_3 \mid o_3)$};
+\node[above=0.1cm of d2, font=\scriptsize\bfseries, color=purple!80!black] {Centralized Critic $V_\phi(s)$ (Offline Training)};
+
+% Layer 4
+\node[layer, fill=green!8] (L4) at (0, -0.6) {};
+\node[anchor=north west, font=\bfseries\small, color=green!60!black] at (-7.3, 0.3) {Layer 4: Safety State Machine \& Actuation Layer};
+\node[box] (e1) at (-4.5, -0.8) {Safety Constraints\\(Min-Green, Yellow)};
+\node[box] (e2) at (0, -0.8) {Signal Actuator\\(Red / Yellow / Green)};
+\node[box] (e3) at (4.5, -0.8) {Interactive Dashboard\\(Streamlit / OpenCV)};
+
+\draw[arrow] (e1) -- (e2);
+\draw[arrow] (e2) -- (e3);
+
+% Inter-layer connections
+\draw[arrow] (b4) -- (0, 6.2) -- (c1.north);
+\draw[arrow] (c1) -- (-4.2, 3.4) -- (d1.north);
+\draw[arrow] (c1) -- (0, 3.4) -- (d2.north);
+\draw[arrow] (c1) -- (4.2, 3.4) -- (d3.north);
+\draw[arrow] (d1.south) -- (-4.5, 0.6) -- (e1.north);
+\draw[arrow] (d2.south) -- (0, 0.6) -- (e1.north);
+\draw[arrow] (d3.south) -- (4.5, 0.6) -- (e1.north);
+
+\end{tikzpicture}
+\caption{Four-layer system architecture of the Multi-Agent Adaptive Traffic Signal Corridor}
+\label{fig:ch3_system_arch}
+\end{figure}
+
+\subsection{Arterial Corridor Topology}
+The modeled corridor represents a 1.8-kilometer arterial stretch of the NH-48 Expressway in Gurgaon, comprising three high-density, multi-approach signalized intersections:
+\begin{enumerate}
+    \item \textbf{Intersection 1 (TL-1, West Junction)}: \texttt{cluster\_266437400\_266437558} (Sector 29 / Leisure Valley Entry). Controls 8 incoming lanes (4 highway through lanes, 2 cross-street lanes, 2 turning bays) and 4 outgoing lanes.
+    \item \textbf{Intersection 2 (TL-2, Middle Corridor)}: \texttt{317145283} (IFFCO Chowk Core Interchange). A massive multi-phase arterial junction with heavy merging maneuvers from MG Road and the surface service lanes. Controls 8 incoming and 4 outgoing lanes.
+    \item \textbf{Intersection 3 (TL-3, East Junction)}: \texttt{cluster\_4162190061\_4162190645} (Signature Tower / Cyber City Exit). Channelizes arterial discharge into central Gurgaon business districts. Controls 8 incoming and 4 outgoing lanes.
+\end{enumerate}
+
+\section{Modelling}
+\label{sec:modelling}
+
+\subsection{Indian Vehicle Perception and IRC PCU Model}
+\label{subsec:pcu_model}
+To overcome the failure of standard vehicle counting in mixed traffic, we formulate an empirical Passenger Car Unit model aligned with IRC:106-1990 standards. Let $\mathcal{B} = \{b_1, b_2, \dots, b_N\}$ be the set of vehicular bounding boxes detected by YOLOv8 on camera frame $I \in \mathbb{R}^{H \times W \times 3}$. Each bounding box is defined by coordinates $b_j = (x_1, y_1, x_2, y_2)$ with box width $w_j = x_2 - x_1$, box height $h_j = y_2 - y_1$, and detection confidence $c_j \ge \tau_{conf}$.
+
+Because standard COCO-pretrained weights assign class ID 2 to all passenger cars, we implement an aspect-ratio and spatial footprint re-classifier to isolate Indian three-wheeled auto-rickshaws:
+\begin{equation}
+\text{Class}(b_j) = 
+\begin{cases}
+\text{Two-Wheeler}, & \text{if } \text{cls}_j \in \{1, 3\} \text{ (bicycle, motorcycle)} \\
+\text{Bus}, & \text{if } \text{cls}_j = 5 \\
+\text{Commercial Truck}, & \text{if } \text{cls}_j = 7 \\
+\text{Auto-Rickshaw}, & \text{if } \text{cls}_j = 2 \;\land\; \left(\frac{h_j}{w_j} > 1.05\right) \;\land\; \left(\frac{w_j h_j}{H^2} < 0.045\right) \\
+\text{Passenger Car}, & \text{otherwise for } \text{cls}_j = 2
+\end{cases}
+\end{equation}
+
+Each classified vehicle is assigned an empirical Passenger Car Unit weight $w_k$ derived from IRC:106:
+\begin{equation}
+w(b_j) = 
+\begin{cases}
+0.50 \text{ PCU}, & \text{Two-Wheeler} \\
+1.00 \text{ PCU}, & \text{Auto-Rickshaw} \\
+1.00 \text{ PCU}, & \text{Passenger Car} \\
+3.00 \text{ PCU}, & \text{City Bus} \\
+3.00 \text{ PCU}, & \text{Commercial Truck}
+\end{cases}
+\end{equation}
+
+To distinguish actively moving vehicles from queued vehicles awaiting signal clearance, centroids $c_j^t = \left(\frac{x_1 + x_2}{2}, \frac{y_1 + y_2}{2}\right)$ are tracked across consecutive frames using the Linear Assignment Problem (LAP). A vehicle is classified as queued ($\text{Queued}_j = 1$) if its displacement $\Delta d$ satisfies:
+\begin{equation}
+\Delta d = \|c_j^t - c_j^{t-1}\|_2 < 4.0 \text{ pixels for } \Delta t \ge 4 \text{ consecutive frames}
+\end{equation}
+
+The total approach queue load in Passenger Car Units is then:
+\begin{equation}
+Q_{\text{PCU}} = \sum_{j \in \mathcal{B}_{\text{approach}}} w(b_j) \cdot \text{Queued}_j
+\end{equation}
+
+\subsection{Markov Decision Process (MDP) Formulation}
+The multi-intersection corridor is formulated as a decentralized partially observable Markov Decision Process (Dec-POMDP) defined by the tuple $\langle \mathcal{N}, \mathcal{S}, \{\mathcal{O}_i\}, \{\mathcal{A}_i\}, \mathcal{P}, \mathcal{R}, \gamma \rangle$, where $\mathcal{N} = \{1, 2, 3\}$ represents the three signalized intersections.
+
+\subsubsection{Local Observation Space ($\mathcal{O}_i \in \mathbb{R}^{22}$)}
+Each agent $i \in \mathcal{N}$ observes a localized 22-dimensional feature vector $o_i \in \mathbb{R}^{22}$ pulled directly from its approach sensors or edge camera feed:
+\begin{equation}
+o_i = [q_1, \dots, q_8, \; w_1, \dots, w_8, \; th_1, \dots, th_4, \; p_{idx}, \; \sigma_{state}]
+\end{equation}
+where:
+\begin{itemize}
+    \item $q_1, \dots, q_8 \in [0, 1]$: Normalized queue lengths for the 8 incoming approach lanes, normalized by maximum lane capacity: $q_l = \min\left(\frac{Q_{\text{PCU}, l}}{35.0}, 1.0\right)$.
+    \item $w_1, \dots, w_8 \in [0, 1]$: Normalized vehicular waiting delays across incoming lanes: $w_l = \min\left(\frac{\text{Wait}_l}{120.0}, 1.0\right)$.
+    \item $th_1, \dots, th_4 \in [0, 1]$: Normalized exit lane downstream discharge throughput: $th_k = \min\left(\frac{\text{Thru}_k}{450.0}, 1.0\right)$.
+    \item $p_{idx} \in \{0.0, 0.5, 1.0\}$: Current active phase index normalized by maximum phase count: $p_{idx} = \frac{\text{Phase}}{2.0}$.
+    \item $\sigma_{state} \in \{0.0, 0.5, 1.0\}$: Signal lamp status: 1.0 for Green, 0.5 for Yellow clearance, and 0.0 for Red stop.
+\end{itemize}
+
+\subsubsection{Global State Space ($\mathcal{S} \in \mathbb{R}^{66}$)}
+The centralized Critic network observes the concatenated global corridor state $s \in \mathbb{R}^{66}$:
+\begin{equation}
+s = [o_1 \parallel o_2 \parallel o_3] \in \mathbb{R}^{66}
+\end{equation}
+providing complete spatial awareness of platoon dispersion, upstream discharges, and downstream bottleneck choke points.
+
+\subsubsection{Action Space ($\mathcal{A}_i$)}
+Each agent selects from three discrete, non-conflicting operational signal phases:
+\begin{equation}
+a_i \in \{0, 1, 2\}
+\end{equation}
+\begin{itemize}
+    \item \textbf{Action 0 (Phase 0)}: Main Corridor Arterial Green (Eastbound \& Westbound NH-48 flow). Cross-streets held at Red.
+    \item \textbf{Action 1 (Phase 1)}: Cross-Street Arterial Green (Northbound \& Southbound inflows from Sector 29 / MG Road). Main highway held at Red.
+    \item \textbf{Action 2 (Phase 2)}: Protected Diagonal \& Heavy Right-Turn Clearance.
+\end{itemize}
+
+\subsubsection{Corridor Reward Function ($\mathcal{R}$)}
+To incentivize cooperative throughput maximization and penalize vehicle queue accumulation, the immediate scalar corridor reward $r_t$ is formulated around IRC:106 PCU cost metrics:
+\begin{equation}
+r_t = - \sum_{i \in \mathcal{N}} \left[ \alpha \sum_{l=1}^8 q_{i,l}^2 + \beta \sum_{l=1}^8 w_{i,l} + \omega \cdot \mathbb{I}(\text{Switch}_i) \right]
+\end{equation}
+where $\alpha = 1.0$, $\beta = 0.5$, and $\omega = 2.0$. The quadratic queue penalty $q_{i,l}^2$ penalizes extreme queue buildup on any single approach (preventing spillback), while $\mathbb{I}(\text{Switch}_i)$ penalizes erratic phase toggling.
+
+\subsection{Multi-Agent PPO with Centralized Training and Decentralized Execution}
+The reinforcement learning policy is optimized using Multi-Agent PPO (MAPPO) with parameter sharing across all homogeneous traffic lights.
+
+Let $\pi_\theta(a_i \mid o_i)$ denote the decentralized Actor policy parameterized by $\theta$, and let $V_\phi(s)$ denote the centralized Critic value function parameterized by $\phi$. Over an episode rollout of length $T$, the generalized advantage estimator $\hat{A}_t^i$ for agent $i$ is computed using $\text{GAE}(\gamma, \lambda)$ \cite{ref_schulman2015gae}:
+\begin{align}
+\delta_t^V &= r_t + \gamma V_\phi(s_{t+1}) - V_\phi(s_t) \\
+\hat{A}_t &= \sum_{l=0}^\infty (\gamma \lambda)^l \delta_{t+l}^V
+\end{align}
+where $\gamma = 0.99$ is the discount factor and $\lambda = 0.95$ is the GAE trace decay parameter.
+
+The Actor policy parameters $\theta$ are updated by maximizing the clipped surrogate PPO objective:
+\begin{equation}
+L^{\text{Actor}}(\theta) = \hat{\mathbb{E}}_t \left[ \frac{1}{|\mathcal{N}|} \sum_{i \in \mathcal{N}} \min\left(\rho_i^t(\theta)\hat{A}_i^t, \, \text{clip}(\rho_i^t(\theta), 1-\varepsilon, 1+\varepsilon)\hat{A}_i^t\right) \right] + \beta_{\text{ent}} \mathcal{H}\left(\pi_\theta(\cdot \mid o_i)\right)
+\end{equation}
+where $\rho_i^t(\theta) = \frac{\pi_\theta(a_i^t \mid o_i^t)}{\pi_{\theta_{\text{old}}}(a_i^t \mid o_i^t)}$ is the importance sampling probability ratio, $\varepsilon = 0.2$ is the clipping threshold, and $\mathcal{H}$ denotes policy entropy with regularization coefficient $\beta_{\text{ent}} = 0.01$.
+
+The Centralized Critic is updated by minimizing the mean squared Bellman error:
+\begin{equation}
+L^{\text{Critic}}(\phi) = \hat{\mathbb{E}}_t \left[ \max\left( (V_\phi(s_t) - R_t)^2, \, (\text{clip}(V_\phi(s_t), V_{\phi_{\text{old}}}(s_t) - \varepsilon, V_{\phi_{\text{old}}}(s_t) + \varepsilon) - R_t)^2 \right) \right]
+\end{equation}
+where $R_t = \hat{A}_t + V_\phi(s_t)$ is the empirical discounted return.
+
+\subsection{Neural Traffic Dynamics World Model}
+To eliminate the runtime instability and socket overhead of microscopic simulators, we train a Deep Residual Multi-Task World Model, denoted as $f_\Omega(s_t, a_t)$.
+
+Let $s_t \in \mathbb{R}^{66}$ be the global corridor state, and let $a_t \in \mathbb{R}^9$ be the joint action vector formed by concatenating the one-hot encoded actions of the three agents ($3 \times 3 = 9$). The model simultaneously predicts the state differential $\Delta s_t = s_{t+1} - s_t \in \mathbb{R}^{66}$ and the scalar reward $r_t \in \mathbb{R}$:
+\begin{equation}
+[\Delta \hat{s}_t, \, \hat{r}_t] = f_\Omega(s_t, a_t)
+\end{equation}
+
+The architecture comprises an input projection layer $\text{Linear}(75, 256)$, two residual blocks with Layer Normalization and GELU non-linearities:
+\begin{equation}
+z_{k+1} = z_k + \text{GELU}(\text{LayerNorm}(\text{Linear}(256, 256)(z_k)))
+\end{equation}
+followed by separate task heads:
+\begin{equation}
+\Delta \hat{s}_t = \text{Linear}(256, 66)(z_{\text{final}}), \quad \hat{r}_t = \text{Linear}(256, 1)(z_{\text{final}})
+\end{equation}
+
+The model is trained via supervised offline learning over a multi-task loss function:
+\begin{equation}
+\mathcal{L}(\Omega) = \frac{1}{B} \sum_{k=1}^B \left[ \|\Delta \hat{s}_k - \Delta s_k\|_2^2 + \lambda_r (\hat{r}_k - r_k)^2 \right]
+\end{equation}
+with reward loss weighting $\lambda_r = 0.1$. The next state during simulation rollout is computed as:
+\begin{equation}
+s_{t+1} = \text{clip}(s_t + \Delta \hat{s}_t, \, 0.0, \, 1.0)
+\end{equation}
+
+\subsection{Traffic Signal Safety State Machine}
+To guarantee that the reinforcement learning policy never executes hazardous transitions, agent actions are filtered through a deterministic Finite State Machine (FSM):
+\begin{equation}
+\sigma_i(t) = 
+\begin{cases}
+\text{GREEN}, & \text{if } a_i(t) = a_i(t-1) \;\lor\; \tau_{\text{green}} < T_{\text{min\_green}} \\
+\text{YELLOW}, & \text{if } a_i(t) \ne a_i(t-1) \;\land\; \tau_{\text{green}} \ge T_{\text{min\_green}} \;\land\; \tau_{\text{yellow}} < T_{\text{yellow\_dur}} \\
+\text{RED}, & \text{if } \tau_{\text{yellow}} \ge T_{\text{yellow\_dur}} \;\land\; \tau_{\text{red}} < T_{\text{all\_red\_dur}}
+\end{cases}
+\end{equation}
+where:
+\begin{itemize}
+    \item $T_{\text{min\_green}} = 12$ seconds: Minimum green duration preventing rapid signal flickering.
+    \item $T_{\text{yellow\_dur}} = 3$ seconds: Amber change clearance interval preventing dilemma-zone crashes.
+    \item $T_{\text{all\_red\_dur}} = 3$ seconds: All-red safety clearance interval allowing intersection interior to clear.
+\end{itemize}
+
+\subsection{Worked Numerical Example}
+To illustrate the end-to-end mathematical pipeline, consider a single decision epoch at Intersection 2 (TL-2, IFFCO Chowk) during peak morning flow:
+\begin{enumerate}
+    \item \textbf{Vision Perception}: YOLOv8 processes the video frame and detects:
+    \begin{itemize}
+        \item 12 Two-Wheelers: $12 \times 0.5 = 6.0$ PCU
+        \item 5 Auto-Rickshaws: $5 \times 1.0 = 5.0$ PCU
+        \item 8 Passenger Cars: $8 \times 1.0 = 8.0$ PCU
+        \item 2 City Buses: $2 \times 3.0 = 6.0$ PCU
+        \item Total approach load: $Q_{\text{PCU}} = 6.0 + 5.0 + 8.0 + 6.0 = 25.0$ PCU.
+    \end{itemize}
+    \item \textbf{Observation Normalization}: The normalized queue feature across approach lanes is:
+    \begin{equation}
+    q_{\text{main}} = \frac{25.0 \text{ PCU}}{35.0 \text{ max PCU}} = 0.714
+    \end{equation}
+    \item \textbf{Policy Evaluation}: The 22-dimensional observation vector $o_2$ is passed into Actor $\pi_\theta$. The output logits are $[-0.12, 1.84, -0.95]$. Computing the Softmax probabilities:
+    \begin{equation}
+    P(a = 1) = \frac{e^{1.84}}{e^{-0.12} + e^{1.84} + e^{-0.95}} = \frac{6.297}{0.887 + 6.297 + 0.387} = 0.832
+    \end{equation}
+    The Actor selects Action 1 (Phase 1: Cross-Street Clearance).
+    \item \textbf{Safety Verification}: The state machine checks elapsed green time $\tau_{\text{green}} = 18.0\text{ s} > 12.0\text{ s}$. The transition is approved. The controller immediately lights the \textbf{Yellow lamp} for 3 seconds, followed by the \textbf{Red lamp} for 3 seconds, before cleanly engaging Phase 1 Green.
+\end{enumerate}
+
+\section{Tool and Technique Selection}
+\label{sec:tool_selection}
+Table \ref{tab:selected_tools} summarizes the software libraries, frameworks, and deep learning runtimes selected for this project, along with technical justifications.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Selected tools, frameworks, and technical justifications}
+\label{tab:selected_tools}
+\begin{tabularx}{\textwidth}{|p{3.0cm}|p{3.2cm}|X|}
+\hline
+\textbf{Tool / Technique} & \textbf{Role in Project} & \textbf{Technical Justification} \\ \hline
+\textbf{PyTorch 2.2+} & Deep Learning Framework & Native automatic differentiation, accelerated CUDA tensor compute, robust multi-task loss handling, and seamless model deployment. \\ \hline
+\textbf{Ultralytics YOLOv8n} & Edge Vehicle Detection & Anchor-free single-stage CNN detector with state-of-the-art mAP-to-latency trade-off; runs at $\ge 30$ FPS on standard CPU hardware. \\ \hline
+\textbf{OpenCV 5.0} & Video Processing \& HUD & High-throughput frame rasterization, video decoding, coordinate transformation, and real-time visual HUD signal rendering. \\ \hline
+\textbf{Gymnasium} & RL Environment API & Standardized Reinforcement Learning API (\texttt{reset}, \texttt{step}, action/observation spaces) ensuring modularity and reproducibility. \\ \hline
+\textbf{Streamlit} & Web Telemetry UI & Modern Python-native web application framework enabling live video streaming, interactive widget controls, and dynamic telemetry. \\ \hline
+\textbf{Plotly} & Dynamic Charting & Interactive WebGL-accelerated time-series graphing for multi-agent queue dynamics, PCU load, and vehicle breakdowns. \\ \hline
+\textbf{Eclipse SUMO} & Network Modelling & Industry-standard microscopic traffic simulator used to extract calibrated OSM arterial geometries for the NH-48 corridor. \\ \hline
+\end{tabularx}
+\end{table}

@@ -1,0 +1,370 @@
+\documentclass[12pt,a4paper,oneside]{report}
+
+% ==============================================================================
+% PACKAGE CONFIGURATIONS
+% ==============================================================================
+\usepackage[a4paper, top=2.5cm, bottom=2.5cm, left=3.0cm, right=2.0cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing % 1.5 Line Spacing requirement
+
+% Font: Times New Roman standard
+\usepackage{mathptmx}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% Mathematics packages
+\usepackage{amsmath, amssymb, amsfonts}
+
+% Tables & Formatting
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+
+% Graphics & Colors
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, backgrounds}
+
+% Code Listings
+\usepackage{listings}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.97,0.97,0.98}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen}\itshape,
+    keywordstyle=\color{blue}\bfseries,
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{codegray!30}
+}
+\lstset{style=mystyle}
+
+% JSON listing support
+\lstdefinelanguage{json}{
+    basicstyle=\normalfont\ttfamily\footnotesize,
+    numbers=left,
+    numberstyle=\tiny\color{codegray},
+    stepnumber=1,
+    numbersep=8pt,
+    showstringspaces=false,
+    breaklines=true,
+    frame=lines,
+    backgroundcolor=\color{backcolour},
+    literate=
+     *{0}{{{\color{blue}0}}}{1}
+      {1}{{{\color{blue}1}}}{1}
+      {2}{{{\color{blue}2}}}{1}
+      {3}{{{\color{blue}3}}}{1}
+      {4}{{{\color{blue}4}}}{1}
+      {5}{{{\color{blue}5}}}{1}
+      {6}{{{\color{blue}6}}}{1}
+      {7}{{{\color{blue}7}}}{1}
+      {8}{{{\color{blue}8}}}{1}
+      {9}{{{\color{blue}9}}}{1}
+      {:}{{{\color{black}{: }}}}{1}
+      {,}{{{\color{black}{, }}}}{1}
+      {\{}{{{\color{black}{\{}}}}{1}
+      {\}}{{{\color{black}{\}}}}}{1}
+      {[}{{{\color{black}{[}}}}{1}
+      {]}{{{\color{black}{]}}}}{1},
+}
+
+% Titlesec formatting: 16pt Chapter, 14pt Section, 12pt Subsection
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\fontsize{16}{20}\bfseries}{\chaptertitlename\ \thechapter}{14pt}{\fontsize{16}{20}\bfseries}
+\titleformat{\section}
+  {\normalfont\fontsize{14}{18}\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\fontsize{12}{16}\bfseries}{\thesubsection}{1em}{}
+\titlespacing*{\chapter}{0pt}{-20pt}{20pt}
+
+% Header and Footer
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\nouppercase{\leftmark}}
+\fancyhead[R]{\small B.Tech Major Project 1}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.3pt}
+
+% Hyperref
+\usepackage[colorlinks=true, linkcolor=blue!80!black, citecolor=blue!80!black, urlcolor=blue!80!black]{hyperref}
+
+% Table column helper types
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+% ==============================================================================
+% DOCUMENT CONTENT
+% ==============================================================================
+\begin{document}
+
+% ------------------------------------------------------------------------------
+% PRELIMINARY PAGES (ROMAN NUMERALS)
+% ------------------------------------------------------------------------------
+\pagenumbering{roman}
+\thispagestyle{empty}
+
+% 1. COVER PAGE / TITLE PAGE
+\begin{center}
+    \vspace*{0.3cm}
+    {\fontsize{18}{22}\bfseries Multi-Agent Deep Reinforcement Learning for Adaptive Traffic Signal Control in Indian Corridors\par}
+    
+    \vspace{1.2cm}
+    {\fontsize{14}{18}\bfseries MAJOR PROJECT - I\par}
+    
+    \vspace{1.2cm}
+    {\fontsize{12}{16}\selectfont\textbf{Enrolment Numbers} -- 23104003, 23104005, 23104030\par}
+    \vspace{0.4cm}
+    {\fontsize{12}{16}\selectfont\textbf{Name of Students} -- Shivam Gupta, Tejas Srivastava, Anvit Singhal\par}
+    
+    \vspace{1.0cm}
+    {\fontsize{12}{16}\selectfont\textbf{Name of Supervisor} -- Dr. Kapil Madan\par}
+    
+    \vfill
+    \begin{figure}[h]
+        \centering
+        \begin{tikzpicture}
+            \draw[thick, color=blue!70!black] (0,0) circle (1.2cm);
+            \node[font=\bfseries\tiny, color=blue!80!black, align=center] at (0, 0.45) {JAYPEE INSTITUTE OF\\INFORMATION TECHNOLOGY};
+            \node[font=\bfseries\large, color=orange!80!black] at (0, -0.05) {jiit};
+            \node[font=\small, color=blue!90!black] at (0, -0.45) {विद्या तत्व ज्योतिसमः};
+        \end{tikzpicture}
+    \end{figure}
+    \vspace{0.2cm}
+    
+    {\fontsize{12}{15}\selectfont\textbf{20th November 2026}\par}
+    \vspace{0.5cm}
+    {\fontsize{12}{15}\selectfont Submitted in partial fulfillment of the Degree Of\par}
+    \vspace{0.2cm}
+    {\fontsize{14}{17}\bfseries Bachelor of Technology\par}
+    {\fontsize{12}{15}\selectfont In\par}
+    {\fontsize{13}{16}\bfseries Information Technology\par}
+    
+    \vspace{0.8cm}
+    {\fontsize{12}{15}\bfseries DEPARTMENT OF COMPUTER SCIENCE ENGINEERING \&\\INFORMATION TECHNOLOGY\par}
+    \vspace{0.15cm}
+    {\fontsize{13}{16}\bfseries JAYPEE INSTITUTE OF INFORMATION TECHNOLOGY,\\NOIDA\par}
+\end{center}
+
+\newpage
+\thispagestyle{empty}
+
+% 2. CERTIFICATE PAGE
+\begin{center}
+    {\fontsize{16}{20}\bfseries JAYPEE INSTITUTE OF INFORMATION TECHNOLOGY\\NOIDA\par}
+    \vspace{0.3cm}
+    {\fontsize{12}{15}\selectfont (Declared Deemed to be University u/s 3 of UGC Act 1956)\par}
+    \vspace{1.5cm}
+    {\fontsize{16}{20}\bfseries\underline{CERTIFICATE}\par}
+\end{center}
+
+\vspace{1.0cm}
+\noindent This is to certify that the project report entitled \textbf{``Multi-Agent Deep Reinforcement Learning for Adaptive Traffic Signal Control in Indian Corridors,''} submitted by \textbf{Shivam Gupta (23104003), Tejas Srivastava (23104005), Anvit Singhal (23104030)} in partial fulfillment of the requirements for the award of the degree of \textbf{Bachelor of Technology in Information Technology} at \textbf{Jaypee Institute of Information Technology, Noida}, is an authentic record of the original work carried out by them under my supervision and guidance during the 7th Semester (Odd Semester, 2026).
+
+\vspace{0.8cm}
+\noindent To the best of my knowledge, the matter embodied in this report has not been submitted to any other University or Institute for the award of any degree or diploma.
+
+\vspace{3.5cm}
+\noindent
+\begin{minipage}[t]{0.55\textwidth}
+    \textbf{Dr. Kapil Madan}\\
+    Project Supervisor\\
+    Assistant Professor\\
+    Department of CSE \& IT\\
+    Jaypee Institute of Information Technology\\
+    Noida, Uttar Pradesh
+\end{minipage}
+
+\newpage
+
+% 3. DECLARATION OF ORIGINALITY
+\begin{center}
+    {\fontsize{16}{20}\bfseries\underline{CANDIDATE'S DECLARATION}\par}
+\end{center}
+
+\vspace{1.0cm}
+\noindent We hereby declare that the work presented in this project report entitled \textbf{``Multi-Agent Deep Reinforcement Learning for Adaptive Traffic Signal Control in Indian Corridors,''} in partial fulfillment of the requirements for the award of the degree of \textbf{Bachelor of Technology in Information Technology}, submitted to the \textbf{Department of Computer Science Engineering \& Information Technology, Jaypee Institute of Information Technology, Noida}, is an authentic record of our own work carried out during the period from July 2026 to November 2026 under the supervision of \textbf{Dr. Kapil Madan}.
+
+\vspace{0.8cm}
+\noindent We further declare that we have not submitted the matter embodied in this project report for the award of any other degree or diploma to any other institution or university. All sources of assistance, empirical datasets, and open-source software libraries utilized have been duly acknowledged and referenced.
+
+\vspace{3.0cm}
+\noindent
+\begin{minipage}[t]{0.5\textwidth}
+    \textbf{Date:} 20th November 2026\\
+    \textbf{Place:} Noida, Uttar Pradesh
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+    \raggedleft
+    \textbf{Shivam Gupta} (23104003)\\[0.2cm]
+    \textbf{Tejas Srivastava} (23104005)\\[0.2cm]
+    \textbf{Anvit Singhal} (23104030)\\[0.3cm]
+    B.Tech (IT), 7th Semester\\
+    Jaypee Institute of Information Technology
+\end{minipage}
+
+\newpage
+
+% 4. ACKNOWLEDGEMENTS
+\chapter*{Acknowledgements}
+\addcontentsline{toc}{chapter}{Acknowledgements}
+
+We would like to express our sincere and profound gratitude to our project supervisor, \textbf{Dr. Kapil Madan}, Assistant Professor, Department of Computer Science Engineering \& Information Technology, for his invaluable guidance, continuous encouragement, constructive criticisms, and intellectual mentorship throughout the conceptualization and development of this project. His deep insights into intelligent transportation systems and machine learning methodologies have been instrumental in shaping this research.
+
+We extend our heartfelt gratitude to the faculty members and project evaluation committee of the Department of CSE \& IT for their perceptive evaluations, suggestions, and technical feedback during the periodic progress reviews, and for providing the necessary infrastructural facilities and computing resources.
+
+Finally, we express our deepest appreciation to our parents, family members, and peers for their unconditional moral support, understanding, and persistent motivation throughout the course of our undergraduate studies.
+
+\vspace{2.0cm}
+\noindent
+\textbf{Shivam Gupta} (23104003)\\[0.15cm]
+\textbf{Tejas Srivastava} (23104005)\\[0.15cm]
+\textbf{Anvit Singhal} (23104030)\\[0.2cm]
+B.Tech IT (2023--2027)
+
+\newpage
+
+% 5. ABSTRACT
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+Rapid urbanization across India has intensified arterial traffic congestion, characterized by extreme vehicular heterogeneity, non-lane-based driving discipline, uncoordinated signal splits, and severe inter-junction queue spillback. Traditional fixed-time plans and classical actuated systems (e.g., SCOOT, SCATS) fail to adapt to rapid stochastic fluctuations and incur exorbitant deployment costs due to their reliance on failure-prone sub-surface inductive loops. Furthermore, training Deep Reinforcement Learning (DRL) policies directly on physical roadways is prohibited by extreme safety hazards, whereas training within synthetic microscopic simulators (e.g., SUMO) leads to severe sim-to-real reality gap failures under unstructured Indian traffic.
+
+To resolve these fundamental challenges, this project formulates, implements, benchmarks, and validates an end-to-end, simulator-independent, vision-driven Multi-Agent Reinforcement Learning framework for coordinated arterial corridor signal control. The architecture integrates four core technological innovations: (1) a real-time perception pipeline utilizing YOLOv8 fine-tuned on the IISc AIM BMD-45 dataset across 14 Indian vehicle classes, converting live CCTV feeds into metric queue lengths and densities weighted by Indian Road Congress (IRC:106-1990) Passenger Car Units (PCU) at 38.6 FPS; (2) a high-capacity Residual Multi-Layer Perceptron (Res-MLP) neural world model trained on 40 consecutive days of empirical 1-second interval queue and density measurements from IIT Delhi and Pune arterial datasets, serving as an ultra-fast (135,000 steps/sec), high-fidelity surrogate digital twin ($R^2 = 0.982$, State MSE $= 0.001579$); (3) a Multi-Agent Proximal Policy Optimization (MAPPO) architecture operating under Centralized Training with Decentralized Execution (CTDE), where local agents control signal phases at each intersection using 22-dimensional local state vectors while a centralized critic enforces green wave synchronization and corridor-wide throughput maximization; and (4) a deterministic safety state machine guaranteeing strict adherence to IRC:93-1985 signal timing mandates ($G_{\min} \ge 12$\,s, $G_{\max} \le 65$\,s, 3.0\,s yellow, 3.0\,s all-red).
+
+Comprehensive empirical evaluations across six realistic operational scenarios demonstrate that the trained MAPPO policy reduces average vehicular delay by \textbf{41.48\%} (24.7\,s vs.\ 42.2\,s), lowers average queue length by \textbf{48.42\%} (4.9\,PCU vs.\ 9.5\,PCU), and elevates corridor throughput by \textbf{26.68\%} over Webster fixed-time baselines. During heavy peak congestion, delay reduction reaches \textbf{51.52\%}. Furthermore, edge hardware validation on the NVIDIA Jetson platform indicates a total unit power draw under $13.4$\,W and an estimated 88.5\% capital cost reduction compared to legacy centralized adaptive systems.
+
+\vspace{1.0cm}
+\noindent\textbf{Keywords:} Multi-Agent Deep Reinforcement Learning, MAPPO, Centralized Training Decentralized Execution, Neural World Model, Computer Vision, YOLOv8, Heterogeneous Traffic, Arterial Corridor Coordination.
+
+\newpage
+
+% 6. TABLE OF CONTENTS, LIST OF FIGURES, LIST OF TABLES
+\tableofcontents
+\newpage
+\listoffigures
+\newpage
+\listoftables
+\newpage
+
+% 7. LIST OF ABBREVIATIONS
+\chapter*{List of Abbreviations}
+\addcontentsline{toc}{chapter}{List of Abbreviations}
+
+\begin{longtable}{p{3.0cm} p{11.5cm}}
+\toprule
+\textbf{Abbreviation} & \textbf{Full Expansion} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Abbreviation} & \textbf{Full Expansion} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\textbf{AI} & Artificial Intelligence \\
+\textbf{ATSC} & Adaptive Traffic Signal Control \\
+\textbf{BMD-45} & Benchmark Dataset for Indian Traffic (IISc Bangalore) \\
+\textbf{BOM} & Bill of Materials \\
+\textbf{CCTV} & Closed-Circuit Television \\
+\textbf{COMA} & Counterfactual Multi-Agent Policy Gradients \\
+\textbf{CPU} & Central Processing Unit \\
+\textbf{CTDE} & Centralized Training with Decentralized Execution \\
+\textbf{CUDA} & Compute Unified Device Architecture \\
+\textbf{C-V2X} & Cellular Vehicle-to-Everything \\
+\textbf{Dec-POMDP} & Decentralized Partially Observable Markov Decision Process \\
+\textbf{DPDP} & Digital Personal Data Protection Act (2023) \\
+\textbf{DQN} & Deep Q-Network \\
+\textbf{DRL} & Deep Reinforcement Learning \\
+\textbf{DSRC} & Dedicated Short-Range Communications \\
+\textbf{FPS} & Frames Per Second \\
+\textbf{GAE} & Generalized Advantage Estimation \\
+\textbf{GAT} & Graph Attention Network \\
+\textbf{GLOSA} & Green Light Optimal Speed Advisory \\
+\textbf{GNN} & Graph Neural Network \\
+\textbf{GPU} & Graphics Processing Unit \\
+\textbf{HIL} & Hardware-in-the-Loop \\
+\textbf{HUD} & Heads-Up Display \\
+\textbf{IIT} & Indian Institute of Technology \\
+\textbf{IISc} & Indian Institute of Science \\
+\textbf{IoU} & Intersection over Union \\
+\textbf{IRC} & Indian Roads Congress \\
+\textbf{LAP} & Linear Assignment Problem \\
+\textbf{MADDPG} & Multi-Agent Deep Deterministic Policy Gradient \\
+\textbf{MAPPO} & Multi-Agent Proximal Policy Optimization \\
+\textbf{MARL} & Multi-Agent Reinforcement Learning \\
+\textbf{MDP} & Markov Decision Process \\
+\textbf{MLP} & Multi-Layer Perceptron \\
+\textbf{MoRTH} & Ministry of Road Transport and Highways \\
+\textbf{MSE} & Mean Squared Error \\
+\textbf{NEMA} & National Electrical Manufacturers Association \\
+\textbf{NMS} & Non-Maximum Suppression \\
+\textbf{NVMe} & Non-Volatile Memory Express \\
+\textbf{OpenCV} & Open Source Computer Vision Library \\
+\textbf{PCU} & Passenger Car Unit (IRC:106-1990) \\
+\textbf{PO} & Program Outcome \\
+\textbf{PPO} & Proximal Policy Optimization \\
+\textbf{PSO} & Program Specific Outcome \\
+\textbf{PyTorch} & Python Torch Deep Learning Framework \\
+\textbf{Res-MLP} & Residual Multi-Layer Perceptron \\
+\textbf{RGB} & Red Green Blue \\
+\textbf{RL} & Reinforcement Learning \\
+\textbf{RTSP} & Real-Time Streaming Protocol \\
+\textbf{SCATS} & Sydney Co-ordinated Adaptive Traffic System \\
+\textbf{SCOOT} & Split Cycle Offset Optimisation Technique \\
+\textbf{SDG} & Sustainable Development Goal (United Nations) \\
+\textbf{SUMO} & Simulation of Urban MObility \\
+\textbf{SWOT} & Strengths, Weaknesses, Opportunities, Threats \\
+\textbf{TDP} & Thermal Design Power \\
+\textbf{ToC} & Table of Contents \\
+\textbf{TOPS} & Trillion Operations Per Second \\
+\textbf{UPS} & Uninterruptible Power Supply \\
+\textbf{V2X} & Vehicle-to-Everything \\
+\textbf{VDN} & Value-Decomposition Networks \\
+\textbf{WBS} & Work Breakdown Structure \\
+\textbf{YOLO} & You Only Look Once (Object Detection Architecture) \\
+\bottomrule
+\end{longtable}
+
+\newpage
+
+% ------------------------------------------------------------------------------
+% MAIN CHAPTERS (ARABIC NUMERALS)
+% ------------------------------------------------------------------------------
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{chapters/ch1_introduction}
+\input{chapters/ch2_literature_survey}
+\input{chapters/ch3_system_design}
+\input{chapters/ch4_implementation_testing}
+\input{chapters/ch5_results_discussion}
+\input{chapters/ch6_conclusion}
+\input{chapters/references}
+\input{chapters/appendices}
+\input{chapters/annexures}
+
+\end{document}
